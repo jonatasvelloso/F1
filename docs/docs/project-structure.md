@@ -23,4 +23,8 @@ tests/
 └── integration/              # OpenF1 real (marcados com @pytest.mark.integration)
 
 docs/                         # esta documentação (MkDocs Material)
+
+.github/
+├── actions/setup-poetry/     # action composta: Poetry + Python + cache do .venv
+└── workflows/ci.yml          # CI: lint, secrets, testes, docs, integração
 ```

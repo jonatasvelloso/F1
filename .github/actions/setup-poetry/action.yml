@@ -1,0 +1,37 @@
+name: Setup Python + Poetry
+description: >-
+  Instala o Poetry (via pipx), o Python definido em .python-version e as
+  dependências do projeto com cache do .venv.
+
+inputs:
+  install-args:
+    description: >-
+      Argumentos extras para `poetry install`. Mantenha o mesmo valor em todos
+      os jobs: o cache do .venv é chaveado só pelo poetry.lock.
+    required: false
+    default: "--with dev,docs"
+  poetry-version:
+    description: Versão do Poetry (mesma que gerou o poetry.lock).
+    required: false
+    default: "2.5.1"
+
+runs:
+  using: composite
+  steps:
+    - name: Instalar Poetry
+      shell: bash
+      run: pipx install "poetry==${{ inputs.poetry-version }}"
+
+    - name: Configurar Python
+      uses: actions/setup-python@v6
+      with:
+        python-version-file: .python-version
+        cache: poetry
+
+    - name: Validar pyproject.toml e poetry.lock
+      shell: bash
+      run: poetry check --lock
+
+    - name: Instalar dependências
+      shell: bash
+      run: poetry install --no-interaction ${{ inputs.install-args }}

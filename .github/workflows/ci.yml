@@ -1,0 +1,129 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "0 9 * * 1"   # segundas, 06:00 BRT: integração contra a OpenF1 real
+  workflow_dispatch:
+    inputs:
+      run-integration:
+        description: Rodar também os testes de integração (OpenF1 real)
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  # Na main não cancela: um push novo não pode interromper o deploy das docs.
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+env:
+  PYTHONUTF8: "1"
+  NO_MKDOCS_2_WARNING: "1"
+  # Docs só são publicadas a partir da main (push ou disparo manual).
+  DEPLOY_DOCS: ${{ github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+
+jobs:
+  lint:
+    name: Lint e formatação (Ruff)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup-poetry
+      - name: ruff check
+        run: poetry run ruff check . --output-format=github
+      - name: ruff format --check
+        run: poetry run ruff format --check .
+
+  pre-commit:
+    name: Hooks do pre-commit (higiene + secrets)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      # ruff já roda no job `lint` (com anotações no PR); no-commit-to-branch
+      # falharia em todo push para a main, que só chega via PR mergeado.
+      SKIP: ruff-check,ruff-format,no-commit-to-branch
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup-poetry
+      - name: Cache do pre-commit
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
+      - name: pre-commit run --all-files
+        run: poetry run pre-commit run --all-files --show-diff-on-failure
+
+  tests:
+    name: Testes unitários + cobertura
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup-poetry
+      - name: pytest (sem rede, cobertura mínima no pyproject.toml)
+        run: poetry run pytest --cov-report=xml --junitxml=pytest-report.xml
+      - name: Publicar relatórios
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: |
+            coverage.xml
+            pytest-report.xml
+          retention-days: 14
+
+  docs:
+    name: Build da documentação (MkDocs)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup-poetry
+      - name: mkdocs build --strict
+        run: poetry run mkdocs build --strict -f docs/mkdocs.yml   # gera ./site
+      - name: Publicar site como artefato do Pages
+        if: ${{ env.DEPLOY_DOCS == 'true' }}
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: site
+
+  deploy-docs:
+    name: Deploy da documentação (GitHub Pages)
+    if: ${{ github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+    needs: [lint, pre-commit, tests, docs]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write      # publicar no GitHub Pages
+      id-token: write   # OIDC exigido pelo deploy-pages
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    concurrency:        # nunca cancelar um deploy em andamento
+      group: pages
+      cancel-in-progress: false
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  integration:
+    name: Testes de integração (OpenF1 real)
+    if: >-
+      github.event_name == 'schedule' ||
+      (github.event_name == 'workflow_dispatch' && inputs.run-integration)
+    needs: tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup-poetry
+      - name: pytest -m integration
+        run: poetry run pytest tests/integration -m integration --no-cov

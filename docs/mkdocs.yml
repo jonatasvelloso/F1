@@ -1,5 +1,9 @@
 site_name: F1 — OpenF1 Analytics
 site_description: Dashboard das voltas mais rápidas por etapa, sobre a OpenF1 API
+site_url: https://jonatasvelloso.github.io/F1/
+repo_url: https://github.com/jonatasvelloso/F1
+repo_name: jonatasvelloso/F1
+edit_uri: edit/main/docs/docs/
 site_dir: ../site
 
 theme:

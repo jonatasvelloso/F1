@@ -1,13 +1,52 @@
+# Hooks locais de qualidade. Instalação: `poetry run pre-commit install`
+# Rodar em tudo:            `poetry run pre-commit run --all-files`
+# Atualizar versões:        `poetry run pre-commit autoupdate`
+# A CI (.github/workflows/ci.yml) roda estes mesmos hooks no job `pre-commit`.
+default_install_hook_types: [pre-commit]
+default_stages: [pre-commit]
+exclude: ^(site|data|htmlcov)/
+
 repos:
+  # ------------------------------------------------------------ Higiene geral
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+      - id: check-yaml
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: check-added-large-files
+        args: [--maxkb=1024]
+      - id: debug-statements
+      - id: detect-private-key
+      - id: no-commit-to-branch      # skill.md §8.2: merge direto na main é proibido
+        args: [--branch, main]
+
+  # ------------------------------------------------------------ Ruff (mesma versão do grupo dev)
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.17.5
     hooks:
-      - id: ruff
+      - id: ruff-check
         args: [--fix]
       - id: ruff-format
 
+  # ------------------------------------------------------------ Secrets (skill.md §7.4)
   - repo: https://github.com/Yelp/detect-secrets
     rev: v1.5.0
     hooks:
       - id: detect-secrets
         exclude: poetry.lock
+
+  # ------------------------------------------------------------ Poetry
+  - repo: local
+    hooks:
+      - id: poetry-check
+        name: poetry check --lock
+        entry: poetry check --lock
+        language: system
+        pass_filenames: false
+        files: ^(pyproject\.toml|poetry\.lock)$
