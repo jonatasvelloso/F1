@@ -42,6 +42,15 @@ Os hooks corrigem sozinhos espaços em branco, fim de arquivo e lint do Ruff. Qu
 acontece o commit é abortado: revise as mudanças, faça `git add` e commite de novo. O hook
 `no-commit-to-branch` impede commits direto na `main`.
 
+!!! warning "Windows: habilite o modo UTF-8 do Python"
+    Sem `PYTHONUTF8=1`, o `detect-secrets` lê os arquivos em cp1252 e **pula em silêncio**
+    todo arquivo com acentos, ou seja, passa localmente e falha na CI. Configure uma vez:
+    `setx PYTHONUTF8 1` (e reabra o terminal/VS Code).
+
+Falsos positivos de secrets já auditados ficam em `.secrets.baseline`. Para registrar um
+novo, rode `detect-secrets scan --baseline .secrets.baseline`, confirme com
+`detect-secrets audit .secrets.baseline` e commite o baseline junto.
+
 ## Checklist
 
 - [ ] Lint passou (`poetry run ruff check .`)

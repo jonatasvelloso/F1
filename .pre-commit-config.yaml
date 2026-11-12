@@ -38,8 +38,13 @@ repos:
   - repo: https://github.com/Yelp/detect-secrets
     rev: v1.5.0
     hooks:
+      # Falsos positivos auditados ficam no .secrets.baseline. Para atualizar:
+      #   $env:PYTHONUTF8=1; detect-secrets scan --baseline .secrets.baseline
+      # No Windows, PYTHONUTF8=1 é obrigatório: sem ele o detect-secrets pula
+      # em silêncio os arquivos com acentos (lê em cp1252 e falha no decode).
       - id: detect-secrets
-        exclude: poetry.lock
+        args: [--baseline, .secrets.baseline]
+        exclude: ^(poetry\.lock|\.secrets\.baseline)$
 
   # ------------------------------------------------------------ Poetry
   - repo: local
