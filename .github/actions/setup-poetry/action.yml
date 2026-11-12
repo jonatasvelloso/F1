@@ -23,7 +23,7 @@ runs:
       run: pipx install "poetry==${{ inputs.poetry-version }}"
 
     - name: Configurar Python
-      uses: actions/setup-python@v6
+      uses: actions/setup-python@v7
       with:
         python-version-file: .python-version
         cache: poetry
