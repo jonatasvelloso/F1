@@ -1,0 +1,24 @@
+site_name: F1 — OpenF1 Analytics
+site_description: Dashboard das voltas mais rápidas por etapa, sobre a OpenF1 API
+site_dir: ../site
+
+theme:
+  name: material
+  language: pt
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - content.code.copy
+
+nav:
+  - Início: index.md
+  - Arquitetura: architecture.md
+  - Estrutura do Projeto: project-structure.md
+  - Como Rodar Local: running-locally.md
+  - Como Rodar Testes: running-tests.md
+  - Como Contribuir: contributing.md
+
+markdown_extensions:
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - admonition

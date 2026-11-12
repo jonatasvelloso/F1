@@ -1,0 +1,21 @@
+# Ambiente e secrets
+.env
+*.pem
+*.key
+*.secret
+credentials.json
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+# Ferramentas
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+site/
+
+# Dados locais
+data/

@@ -1,0 +1,137 @@
+[project]
+name = "f1"
+version = "0.1.0"
+description = "Pipeline de ingestão e modelagem analítica dos dados da OpenF1 API"
+authors = [
+    {name = "Jonatas Veloso",email = "jonatas.veloso1998@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.12,<4.0"
+dependencies = [
+    "streamlit (>=1.67.0,<2.0.0)",
+    "requests (>=2.34.2,<3.0.0)",
+    "pydantic (>=2.14.3,<3.0.0)",
+    "plotly (>=7.1.0,<8.0.0)",
+    "pandas (>=3.1.1,<4.0.0)",
+    "python-dotenv (>=1.2.4,<2.0.0)"
+]
+
+[project.scripts]
+f1 = "f1.__main__:main"   # habilita `poetry run f1 <pipeline> ...`
+
+[tool.poetry]
+packages = [{include = "f1", from = "src"}]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+# ---------------------------------------------------------------- Ruff
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+src = ["src", "tests"]
+extend-exclude = ["site", "data"]
+
+[tool.ruff.lint]
+select = [
+    "E", "W",   # pycodestyle (PEP 8)
+    "F",        # pyflakes: imports/variáveis não utilizados, nomes indefinidos
+    "I",        # isort: ordenação de imports
+    "N",        # pep8-naming
+    "D",        # pydocstyle: docstrings
+    "UP",       # pyupgrade: sintaxe moderna
+    "B",        # flake8-bugbear: bugs comuns
+    "A",        # flake8-builtins: sombreamento de builtins
+    "C4",       # flake8-comprehensions
+    "SIM",      # flake8-simplify
+    "RET",      # flake8-return
+    "ARG",      # argumentos não utilizados
+    "PTH",      # pathlib em vez de os.path
+    "DTZ",      # datetimes sem timezone (dados sempre em UTC)
+    "ERA",      # código comentado
+    "PT",       # boas práticas de pytest
+    "S",        # flake8-bandit: segurança
+    "T20",      # print/pprint esquecidos
+    "TID",      # imports proibidos/relativos
+    "PL",       # pylint
+    "RUF",      # regras específicas do Ruff (inclui noqa inválido/desnecessário)
+]
+ignore = [
+    "D105",     # docstring em métodos mágicos: ruído sem ganho
+    "D107",     # docstring em __init__: documentada na classe
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = [
+    "S101",     # assert é o mecanismo do pytest
+    "D",        # docstrings não obrigatórias em testes
+    "PLR2004",  # valores mágicos são esperados em asserts
+    "ARG001",   # fixtures podem ser recebidas apenas pelo efeito colateral
+]
+"src/f1/__main__.py" = [
+    "T201",     # print é a saída legítima da CLI
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
+docstring-code-format = true
+
+# ---------------------------------------------------------------- Pytest
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+    "--import-mode=importlib",
+    "-m", "not integration",
+    "--cov=f1",
+    "--cov-report=term-missing",
+]
+markers = [
+    "integration: testes que acessam a OpenF1 API real (opt-in: -m integration)",
+    "slow: testes lentos (ex.: pipelines ponta a ponta)",
+]
+filterwarnings = ["error"]   # warnings viram erro; exceções pontuais devem ser justificadas
+
+# ---------------------------------------------------------------- Coverage
+[tool.coverage.run]
+source_pkgs = ["f1"]
+branch = true
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true
+skip_covered = false
+precision = 2
+exclude_also = [
+    "if TYPE_CHECKING:",
+    "if __name__ == .__main__.:",
+    "raise NotImplementedError",
+    "@(abc\\.)?abstractmethod",
+]
+
+[tool.coverage.html]
+directory = "htmlcov"
+
+[dependency-groups]
+dev = [
+    "pytest (>=9.2.0,<10.0.0)",
+    "pytest-cov (>=7.1.0,<8.0.0)",
+    "ruff (>=0.17.5,<0.18.0)",
+    "pytest-mock (>=3.17.0,<4.0.0)",
+    "pre-commit (>=4.7.0,<5.0.0)"
+]
+docs = [
+    "mkdocs-material (>=9.8.1,<10.0.0)"
+]
